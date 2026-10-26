@@ -1,0 +1,2392 @@
+<!doctype html>
+<!-- ==========================================================================
+  smartJO Watch - 240×296 Interactive Visual Prototype
+  ==========================================================================
+  Description:
+    A high-fidelity, interactive browser-based visual prototype of the
+    smartJO cybernetic smartwatch interface. Specifically authored for a
+    target screen resolution of 240 x 296 pixels (curved rectangle form factor).
+
+  Key Features:
+    - 240x296 OLED screen simulation with optical curvature and CRT scanlines
+    - 3D interactive hardware chassis with wrist tilt tracking and crown button
+    - Dynamic cybernetic HUD with dual-speed rotating concentric rings & radar sweep
+    - Live time synchronization with system clock (tabular numbers formatting)
+    - Full expanded interactive navigation compass with spirit level inclinometer
+    - Triple color schemes: Cyber Cyan default, Blue-Green Mix Mode, and Red Stress Mode
+    - Accelerometer / gyroscope hardware sensor integration & gesture shake wake
+    - HTML5 Battery Status API integration with charging indicator
+    - Accessibility support with prefers-reduced-motion media query
+  ========================================================================== -->
+<html lang="en">
+
+<head>
+  <!-- Character encoding specification (UTF-8 handles symbols, degrees, and icons) -->
+  <meta charset="utf-8">
+
+  <!-- Responsive viewport meta tag for fluid scaling across devices and DPI densities -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Page description for browser/search previews -->
+  <meta name="description"
+    content="Interactive 240 x 296 smartwatch UI prototype with a cybernetic HUD, live clock, telemetry and compass.">
+
+  <!-- Browser window / tab title -->
+  <title>smartJO Watch 240×296 Prototype</title>
+
+  <style>
+    /* ==========================================================================
+       1. DESIGN SYSTEM VARIABLES & COLOR PALETTE
+       ==========================================================================
+       Defines global CSS custom properties for the cybernetic color scheme.
+       These values are dynamically modified at runtime via JavaScript controls.
+    */
+    :root {
+      /* Primary high-voltage sci-fi cyan accent for readouts and rings */
+      --cyan: #55f6ff;
+
+      /* Deep blue secondary accent for gradients and complementary tones */
+      --blue: #278bff;
+
+      /* Bio-luminescent green for online status and battery indicators */
+      --green: #6affc5;
+
+      /* Subdued slate-blue for secondary labels, borders, and dimmed text */
+      --muted: #7396a7;
+
+      /* Deep void black background to mimic deep OLED dark states */
+      --bg: #02070c;
+    }
+
+    /* ==========================================================================
+       2. GLOBAL RESET & BASE STYLING
+       ==========================================================================
+    */
+    /* Enforce border-box model universally so padding/borders are included in dimensions */
+    * {
+      box-sizing: border-box;
+    }
+
+    /* Host page body: Centers the workbench preview on a dark radial studio canvas */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+      display: grid;
+      place-items: center;
+      /* Deep radial studio vignette lighting */
+      background: radial-gradient(ellipse at 50% 20%, #123142 0%, #07131c 42%, #02060a 80%);
+      color: #eafcff;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    /* ==========================================================================
+       3. PROTOTYPE WORKBENCH LAYOUT
+       ==========================================================================
+       Two-column responsive grid: Watch hardware preview on left, control panel on right.
+    */
+    .layout {
+      width: min(100%, 800px);
+      display: grid;
+      grid-template-columns: minmax(230px, 300px) 1fr;
+      gap: 30px;
+      align-items: center;
+    }
+
+    /* Stage wrapper: Centers the watch chassis and its dimensional caption */
+    .stage {
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+    }
+
+    /* ==========================================================================
+       4. PHYSICAL WATCH HARDWARE CHASSIS
+       ==========================================================================
+       Simulates the physical curved-metal smartwatch casing with CNC chamfers,
+       outer bezel, drop shadows, and 3D perspective for interactive wrist tilting.
+    */
+    .watch {
+      width: 278px;
+      padding: 9px;
+      /* Outer metallic bezel border */
+      border: 8px solid #2b3944;
+      border-radius: 49px;
+      /* Multi-tone metallic brushed gradient */
+      background: linear-gradient(145deg, #1a2933, #05090d 60%, #1d2a34);
+      /* Heavy chassis ambient shadow + inner chamfer highlight rim */
+      box-shadow: 0 22px 70px #000b, inset 0 0 0 2px #5b6a74;
+      position: relative;
+      /* Smooth physics transition for cursor wrist-tilt tracking */
+      transition: transform 0.18s ease-out;
+      transform-style: preserve-3d;
+    }
+
+    /* Hardware Crown Button: Simulates the physical tactile rotating dial on the right edge */
+    .watch:after {
+      content: "";
+      position: absolute;
+      right: -13px;
+      top: 77px;
+      width: 5px;
+      height: 40px;
+      border-radius: 0 4px 4px 0;
+      background: #637783;
+    }
+
+    /* Full-screen preview: fullscreen only the chassis, at its native 240x296 scale */
+    .watch:fullscreen {
+      position: fixed;
+      inset: auto;
+      top: 50%;
+      left: 50%;
+      width: 278px;
+      height: auto;
+      margin: 0;
+      transform: translate(-50%, -50%) !important;
+      cursor: default;
+    }
+
+    /* Deep studio backdrop behind the fullscreen chassis */
+    .watch:fullscreen::backdrop {
+      background: radial-gradient(ellipse at 50% 40%, #0b2230 0%, #040c12 55%, #010305 100%);
+    }
+
+    /* ==========================================================================
+       5. 240 × 296 SMARTWATCH OLED DISPLAY SCREEN
+       ==========================================================================
+       Strictly constrained to 240x296 CSS pixels to match standard curved smartwatch
+       hardware resolutions (e.g. boAt Wave/Sigma Curv form factor).
+    */
+    .screen {
+      width: 240px;
+      height: 296px;
+      max-width: 100%;
+      margin: auto;
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      /* Deep radial OLED back-glow gradient */
+      background: radial-gradient(circle at 50% 38%, #0a2634 0%, #031018 46%, #010407 80%);
+      border: 1px solid #1c6675;
+      box-shadow: inset 0 0 24px #00d9ff19;
+    }
+
+    /* ==========================================================================
+       6. WATCHFACE UI CONTAINER & SCANLINE RASTER OVERLAY
+       ==========================================================================
+       Flex column container for all watchface widgets with futuristic CRT scanlines.
+    */
+    .ui {
+      height: 100%;
+      width: 100%;
+      padding: 15px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* CRT Scanline Overlay: Adds fine horizontal holographic phosphor scanlines */
+    .ui:after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent 0 4px, #67f5ff06 5px 6px);
+    }
+
+    /* ==========================================================================
+       7. TOP STATUS BAR (HEADER)
+       ==========================================================================
+       Displays brand identification and real-time live network/online beacon.
+    */
+    .topline {
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 8px;
+      letter-spacing: 1.1px;
+      white-space: nowrap;
+    }
+
+    /* Online status indicator with emerald green styling */
+    .online {
+      color: var(--green);
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* Pulsating heartbeat dot beacon */
+    .pulse-dot {
+      display: inline-block;
+      animation: statusBlink 1.4s ease-in-out infinite;
+    }
+
+    /* ==========================================================================
+       8. SCI-FI TACTICAL RETICLE CORNER BRACKETS
+       ==========================================================================
+       Positioned at the four corners of the display to create a heads-up display aesthetic.
+    */
+    .corner-bracket {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-color: var(--cyan);
+      border-style: solid;
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 3;
+      animation: bracketPulse 3.5s ease-in-out infinite alternate;
+      transition: border-color 0.3s ease;
+    }
+
+    /* Top-left corner bracket */
+    .corner-bracket.tl {
+      top: 8px;
+      left: 8px;
+      border-width: 1.5px 0 0 1.5px;
+      border-top-left-radius: 3px;
+    }
+
+    /* Top-right corner bracket */
+    .corner-bracket.tr {
+      top: 8px;
+      right: 8px;
+      border-width: 1.5px 1.5px 0 0;
+      border-top-right-radius: 3px;
+    }
+
+    /* Bottom-left corner bracket */
+    .corner-bracket.bl {
+      bottom: 8px;
+      left: 8px;
+      border-width: 0 0 1.5px 1.5px;
+      border-bottom-left-radius: 3px;
+    }
+
+    /* Bottom-right corner bracket */
+    .corner-bracket.br {
+      bottom: 8px;
+      right: 8px;
+      border-width: 0 1.5px 1.5px 0;
+      border-bottom-right-radius: 3px;
+    }
+
+    /* ==========================================================================
+       9. HOLOGRAPHIC SCAN BEAM
+       ==========================================================================
+       Simulates an ambient vertical laser sweep traversing down the watchface.
+    */
+    .scan-beam {
+      position: absolute;
+      top: -60px;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: linear-gradient(180deg, transparent 0%, rgba(85, 246, 255, 0.04) 50%, rgba(85, 246, 255, 0.22) 98%, transparent 100%);
+      box-shadow: 0 0 10px rgba(85, 246, 255, 0.28);
+      pointer-events: none;
+      animation: beamSweep 6s ease-in-out infinite;
+      z-index: 2;
+    }
+
+    /* ==========================================================================
+       10. CENTER HUD CONTAINER (RADAR & DIAL ASSEMBLY)
+       ==========================================================================
+       Houses the concentric cybernetic rings, radar sweep, and primary digital clock.
+    */
+    .hud {
+      position: relative;
+      z-index: 1;
+      width: 156px;
+      height: 156px;
+      flex: none;
+      margin-top: 9px;
+      display: grid;
+      place-items: center;
+      /* Dynamic cyan neon bloom filter */
+      filter: drop-shadow(0 0 9px #26eaff55);
+    }
+
+    /* Radar Sweep: 360-degree rotating radar cone using conic-gradient */
+    .radar-sweep {
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(85, 246, 255, 0.04) 300deg, rgba(85, 246, 255, 0.28) 360deg);
+      animation: spin 5s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Base styles shared by all concentric orbital rings */
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid #39e9ff65;
+    }
+
+    /* Ring 1 (Outer Ring): Smooth continuous clockwise rotation */
+    .r1 {
+      inset: 2px;
+      border-top-color: var(--cyan);
+      border-right-color: #2586a4;
+      animation: spin 18s linear infinite;
+    }
+
+    /* Ring 2 (Middle Ring): Counter-clockwise dashed reticle ring */
+    .r2 {
+      inset: 11px;
+      border: 1px dashed #32b7d17a;
+      animation: spin 32s linear infinite reverse;
+    }
+
+    /* Ring 3 (Inner Ring): Oscillating precession motion */
+    .r3 {
+      inset: 22px;
+      border: 2px solid transparent;
+      border-left-color: #42efff;
+      border-bottom-color: #2672ad;
+      animation: precess 12s ease-in-out infinite alternate;
+    }
+
+    /* Orbital Satellite Path: Invisible circular track for the telemetry particle */
+    .orbit {
+      position: absolute;
+      inset: 1px;
+      border-radius: 50%;
+      animation: spin 9s linear infinite reverse;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Orbiting Particle: Glowing white blip revolving on the orbital boundary */
+    .orbit::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 6px var(--cyan), 0 0 12px var(--cyan);
+    }
+
+    /* Dial Ticks: Radial 360-degree tick marks created via conic gradient and radial mask */
+    .ticks {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: repeating-conic-gradient(from 0deg, #55f6ff 0deg 1deg, transparent 1deg 15deg);
+      mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+      opacity: .8;
+    }
+
+    /* ==========================================================================
+       11. DIGITAL CLOCK & TELEMETRY TYPOGRAPHY
+       ==========================================================================
+    */
+    /* Base clock container centered within the HUD */
+    .clock {
+      text-align: center;
+      text-shadow: 0 0 15px #36eaff75;
+    }
+
+    /* Main digital time display: Uses ultra-light font weight with tabular numbers */
+    .time {
+      font-size: 34px;
+      font-weight: 300;
+      letter-spacing: -1.7px;
+      line-height: 1;
+      /* Tabular figures ensure uniform digit widths so time changes don't cause jitter */
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Sub-label under time */
+    .time-label {
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--cyan);
+      margin-top: 5px;
+    }
+
+    /* ==========================================================================
+       12. MID-BAR: DATE & MINI COMPASS WIDGET
+       ==========================================================================
+       Horizontal layout bar situated directly below the central circular HUD dial.
+    */
+    .mid-bar {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+      margin-top: 8px;
+    }
+
+    /* Formatted calendar date readout (e.g. MON · 26 OCT) */
+    .date {
+      color: #a4dce7;
+      font-size: 9px;
+      letter-spacing: 1.1px;
+    }
+
+    /* Mini Compass Pill: Clickable pill badge displaying current heading and azimuth */
+    .compass {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(8, 30, 39, 0.75);
+      border: 1px solid rgba(85, 246, 255, 0.35);
+      border-radius: 12px;
+      padding: 2px 6px 2px 4px;
+      box-shadow: 0 0 8px rgba(85, 246, 255, 0.15);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    /* Interactive hover highlight for the mini compass pill */
+    .compass:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px rgba(85, 246, 255, 0.35);
+    }
+
+    /* SVG icon container for the compass needle */
+    .compass-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Drop shadow bloom on the mini SVG compass needle */
+    .compass-icon svg {
+      display: block;
+      filter: drop-shadow(0 0 3px rgba(85, 246, 255, 0.5));
+      transition: filter 0.25s ease;
+    }
+
+    /* Needle group: Smooth CSS rotation centered at SVG origin (9px, 9px) */
+    .compass-needle-group {
+      transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+      /* view-box makes the px origin resolve in SVG user units, not the element bbox */
+      transform-box: view-box;
+      transform-origin: 9px 9px;
+    }
+
+    /* Heading degrees and cardinal direction text readout */
+    .compass-deg {
+      font-size: 7.5px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.8px;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       13. FULL EXPANDED NAVIGATION COMPASS SCREEN (MODAL VIEW)
+       ==========================================================================
+       Full overlay screen that appears when tapping the mini compass or control panel.
+       Displays 360-degree rotating compass rose, digital bearing, GPS telemetry,
+       elevation, barometric pressure, and live spirit level bubble inclinometer.
+    */
+    .compass-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 25;
+      padding: 12px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      /* Deep radial cyber gradient */
+      background: radial-gradient(circle at 50% 36%, #092f3e 0%, #03141f 48%, #010609 85%);
+      border-radius: 36px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.92) translateY(8px);
+      /* Smooth physics spring transition on open/close */
+      transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      user-select: none;
+      box-shadow: inset 0 0 24px #00d9ff19;
+    }
+
+    /* Active state when expanded compass is open */
+    .compass-screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+    }
+
+    /* Defocus and dim main watchface UI when compass overlay is active */
+    .ui.blur-out {
+      opacity: 0.12;
+      transform: scale(0.95);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      pointer-events: none;
+    }
+
+    /* Compass overlay header bar */
+    .cs-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 7.5px;
+      letter-spacing: 1.2px;
+      white-space: nowrap;
+    }
+
+    /* Return / exit button hint in compass header */
+    .cs-back {
+      color: var(--cyan);
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-weight: 700;
+    }
+
+    /* Live GPS satellite lock beacon */
+    .cs-gps {
+      color: var(--green);
+      font-size: 7px;
+      letter-spacing: 1px;
+    }
+
+    /* Container for the circular SVG compass rose dial */
+    .cs-dial-wrap {
+      position: relative;
+      width: 134px;
+      height: 134px;
+      margin: 2px auto 0;
+      display: grid;
+      place-items: center;
+    }
+
+    /* Fixed top red heading index pointer at 12 o'clock position */
+    .cs-heading-marker {
+      position: absolute;
+      top: -3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 4.5px solid transparent;
+      border-right: 4.5px solid transparent;
+      border-top: 6px solid #ff3355;
+      z-index: 5;
+      filter: drop-shadow(0 0 4px #ff3355);
+    }
+
+    /* SVG compass rose dial with neon glow filter */
+    .cs-svg-dial {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 8px rgba(85, 246, 255, 0.35));
+    }
+
+    /* Rotating assembly: Rotates inverse of heading so North always points true north */
+    .cs-rotating-group {
+      transition: transform 0.15s cubic-bezier(0.25, 1, 0.5, 1);
+      transform-box: view-box;
+      transform-origin: 67px 67px;
+    }
+
+    /* Numeric bearing readout container below dial */
+    .cs-bearing-block {
+      text-align: center;
+      margin-top: -3px;
+    }
+
+    /* Large digital degrees text */
+    .cs-bearing-deg {
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: -0.8px;
+      line-height: 1;
+      color: #eafcff;
+      text-shadow: 0 0 12px var(--cyan);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Cardinal text description (e.g. NORTH-EAST · BEARING) */
+    .cs-bearing-card {
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--cyan);
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* 2x2 Tactical Telemetry HUD Grid */
+    .cs-telemetry-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px 8px;
+      background: rgba(5, 20, 28, 0.75);
+      border: 1px solid rgba(85, 246, 255, 0.22);
+      border-radius: 12px;
+      padding: 6px 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Individual telemetry cell */
+    .cs-telem-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Telemetry sensor value readout */
+    .cs-telem-val {
+      font-size: 8.5px;
+      font-weight: 600;
+      color: #e5faff;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.5px;
+    }
+
+    /* Telemetry metric descriptor label */
+    .cs-telem-lbl {
+      font-size: 6px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-top: 1px;
+    }
+
+    /* Bottom footer dismiss hint */
+    .cs-footer {
+      font-size: 6.5px;
+      color: var(--cyan);
+      letter-spacing: 1.5px;
+      text-align: center;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      animation: pulseFooter 2s ease-in-out infinite;
+    }
+
+    /* Pulsating glow animation for footer tap hint */
+    @keyframes pulseFooter {
+      0%,
+      100% {
+        opacity: 0.55;
+        transform: scale(0.98);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.02);
+        filter: drop-shadow(0 0 4px var(--cyan));
+      }
+    }
+
+    /* ==========================================================================
+       14. BIOMETRIC & POWER TELEMETRY STATS BARS
+       ==========================================================================
+       Three-column layout for Power/Battery, Step Count, and Heart Rate (BPM).
+    */
+    .stats {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    /* Individual stat column */
+    .stat {
+      text-align: center;
+      min-width: 48px;
+    }
+
+    /* Numerical metric value */
+    .value {
+      color: #e9fcff;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Uppercase label descriptor */
+    .label {
+      color: var(--muted);
+      font-size: 7px;
+      letter-spacing: 1.1px;
+      margin-top: 3px;
+    }
+
+    /* Progress gauge track */
+    .meter {
+      height: 3px;
+      background: #15313c;
+      margin: 4px auto 0;
+      width: 39px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    /* Active progress fill bar with dynamic glow */
+    .meter span {
+      display: block;
+      height: 100%;
+      background: var(--cyan);
+      box-shadow: 0 0 7px var(--cyan);
+      position: relative;
+      overflow: hidden;
+      transition: width 0.4s ease;
+    }
+
+    /* Animated energy shimmer beam traversing across progress gauges */
+    .meter span::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+      animation: energyShimmer 2.2s infinite ease-in-out;
+    }
+
+    /* Beating heart icon next to BPM reading */
+    .bpm-icon {
+      font-size: 8px;
+      color: #ff4d6d;
+      display: inline-block;
+      margin-left: 2px;
+      animation: heartBeat 1.2s ease-in-out infinite;
+    }
+
+    /* ==========================================================================
+       15. BOTTOM STATUS MESSAGE TICKER
+       ==========================================================================
+       Rotating sci-fi system status message at the bottom edge of the screen.
+    */
+    .bottom {
+      position: relative;
+      z-index: 1;
+      margin-top: auto;
+      color: var(--cyan);
+      font-size: 7px;
+      letter-spacing: 1.8px;
+      padding-top: 7px;
+      white-space: nowrap;
+      transition: opacity 0.25s ease;
+    }
+
+    /* ==========================================================================
+       16. WORKBENCH CONTROL PANEL (TEST CONTROLS ON DESKTOP)
+       ==========================================================================
+       Provides interactive range sliders and action buttons to customize the watchface.
+    */
+    /* Target canvas dimensions caption underneath watch preview */
+    .caption {
+      font-size: 11px;
+      color: #89aab7;
+      text-align: center;
+    }
+
+    /* Main control panel container with frosted glassmorphism effect */
+    .panel {
+      border: 1px solid #1e4351;
+      background: #06111bd9;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 18px 55px #0005;
+    }
+
+    /* Sub-header kicker text */
+    .kicker {
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 3px;
+    }
+
+    /* Main brand typography heading */
+    h1 {
+      margin: 8px 0;
+      font-size: clamp(25px, 4vw, 38px);
+      letter-spacing: -1.5px;
+    }
+
+    /* Descriptive text copy */
+    p {
+      color: #a9c4ce;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    /* Grid wrapper for test slider controls */
+    .controls {
+      display: grid;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    /* Slider label displaying name and live percentage value */
+    label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: #d8f3f7;
+      font-size: 13px;
+    }
+
+    /* Styled range input slider */
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--cyan);
+      margin-top: 9px;
+    }
+
+    /* Flex wrapper for interactive action buttons */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* Cyberpunk interactive button styling */
+    button {
+      border: 1px solid #3de8f4;
+      border-radius: 12px;
+      background: #0c2c38;
+      color: #dffcff;
+      padding: 11px 13px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    /* Hover elevation on buttons */
+    button:hover {
+      background: #104454;
+    }
+
+    /* Explanatory prototype note text */
+    .note {
+      font-size: 11px;
+      color: #7e9aa6;
+      margin-top: 13px;
+    }
+
+    /* ==========================================================================
+       17. CSS KEYFRAME ANIMATIONS
+       ==========================================================================
+    */
+    /* Continuous 360-degree rotation animation */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Oscillating elliptical precession animation for inner ring r3 */
+    @keyframes precess {
+      0% {
+        transform: rotate(-25deg) scale(0.98);
+      }
+
+      50% {
+        transform: rotate(155deg) scale(1.02);
+      }
+
+      100% {
+        transform: rotate(335deg) scale(0.98);
+      }
+    }
+
+    /* Vertical holographic laser scan sweep traversing across the screen */
+    @keyframes beamSweep {
+      0% {
+        transform: translateY(-60px);
+        opacity: 0;
+      }
+
+      12% {
+        opacity: 0.8;
+      }
+
+      82% {
+        opacity: 0.8;
+      }
+
+      96%,
+      100% {
+        transform: translateY(350px);
+        opacity: 0;
+      }
+    }
+
+    /* Breathing subtle pulsing animation for tactical corner reticles */
+    @keyframes bracketPulse {
+      0% {
+        opacity: 0.35;
+        transform: scale(0.95);
+      }
+
+      100% {
+        opacity: 0.95;
+        transform: scale(1.05);
+      }
+    }
+
+    /* Energy shimmer beam passing through telemetry progress bars */
+    @keyframes energyShimmer {
+      0% {
+        left: -100%;
+      }
+
+      45%,
+      100% {
+        left: 160%;
+      }
+    }
+
+    /* Status indicator blink animation */
+    @keyframes statusBlink {
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: drop-shadow(0 0 4px currentColor);
+      }
+
+      50% {
+        opacity: 0.35;
+        transform: scale(0.8);
+        filter: none;
+      }
+    }
+
+    /* Simulated physiological ECG heartbeat pulse rhythm */
+    @keyframes heartBeat {
+      0%,
+      100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 2px #ff4d6d);
+      }
+
+      15% {
+        transform: scale(1.35);
+        filter: drop-shadow(0 0 6px #ff4d6d);
+      }
+
+      30% {
+        transform: scale(1);
+      }
+
+      45% {
+        transform: scale(1.2);
+        filter: drop-shadow(0 0 4px #ff4d6d);
+      }
+
+      60% {
+        transform: scale(1);
+      }
+    }
+
+    /* Wrist flick raise simulation animation (triggered on body motion / button) */
+    @keyframes wristRaise {
+      0% {
+        transform: scale(1) rotate(0deg);
+      }
+
+      25% {
+        transform: scale(1.04) rotate(-3.5deg) translateY(-8px);
+        filter: drop-shadow(0 25px 40px rgba(62, 245, 165, 0.45));
+      }
+
+      50% {
+        transform: scale(1.03) rotate(2deg) translateY(-4px);
+      }
+
+      75% {
+        transform: scale(1.01) rotate(-1deg);
+      }
+
+      100% {
+        transform: scale(1) rotate(0deg);
+      }
+    }
+
+    /* Class applied when wrist motion is active */
+    .watch.wrist-motion {
+      animation: wristRaise 0.85s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    }
+
+    /* ==========================================================================
+       18. BODY MOTION NOTIFICATION BADGE
+       ==========================================================================
+       Floating HUD badge that pops up when body motion or laptop shake is detected.
+    */
+    .motion-badge {
+      position: absolute;
+      top: 25px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px) scale(0.9);
+      background: rgba(8, 30, 36, 0.94);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      padding: 3px 8px;
+      border-radius: 9px;
+      box-shadow: 0 0 12px rgba(62, 245, 165, 0.5);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    /* Visible state when motion is triggered */
+    .motion-badge.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    /* ==========================================================================
+       19. ANIMATION PAUSE CONTROLLER
+       ==========================================================================
+       Freezes all CSS animations on the watch screen when toggled via control panel.
+    */
+    .animations-paused *,
+    .animations-paused *::before,
+    .animations-paused *::after {
+      animation-play-state: paused !important;
+    }
+
+    /* ==========================================================================
+       20. ACCESSIBILITY: PREFERS REDUCED MOTION
+       ==========================================================================
+       Respects user OS-level preference for reduced motion by disabling continuous
+       spinning, sweeping, pulsing, and translation animations.
+    */
+    @media(prefers-reduced-motion:reduce) {
+      .r1,
+      .r2,
+      .r3,
+      .radar-sweep,
+      .orbit,
+      .scan-beam,
+      .corner-bracket,
+      .meter span::after,
+      .pulse-dot,
+      .bpm-icon,
+      .stress-mode .screen,
+      .watch.wrist-motion {
+        animation: none !important;
+      }
+    }
+
+    /* ==========================================================================
+       21. BLUE-GREEN MIX THEME (CYBERPUNK MIX MODE)
+       ==========================================================================
+       Blends the default futuristic blue aesthetic with vivid neon mint-green
+       accents, creating a vibrant alternate colorway. Activated via button or motion wake.
+    */
+    .light-mode {
+      --cyan: #46f5b6;
+      --green: #68ffb5;
+      --muted: #7ca79f;
+    }
+
+    /* Body background in mix mode */
+    .light-mode body {
+      background: radial-gradient(ellipse at 50% 20%, #0d323b 0%, #061e25 38%, #031017 68%, #020609 100%);
+      color: #ebfff8;
+    }
+
+    /* Watch chassis outer bezel styling in mix mode */
+    .light-mode .watch {
+      border-color: #244643;
+      background: linear-gradient(145deg, #132a2d, #050f14 60%, #173135);
+      box-shadow: 0 22px 70px #000c, inset 0 0 0 2px #3c6e68;
+    }
+
+    /* Hardware crown button in mix mode */
+    .light-mode .watch:after {
+      background: #46766d;
+    }
+
+    /* OLED screen display back-glow in mix mode */
+    .light-mode .screen {
+      background: radial-gradient(circle at 50% 38%, #083439 0%, #041a22 46%, #01080d 80%);
+      border-color: #1b6c64;
+      box-shadow: inset 0 0 24px #33ffaa24;
+    }
+
+    /* Phosphor scanline overlay in mix mode */
+    .light-mode .ui:after {
+      background: repeating-linear-gradient(0deg, transparent 0 4px, #42ffb809 5px 6px);
+    }
+
+    /* Laser scan beam in mix mode */
+    .light-mode .scan-beam {
+      background: linear-gradient(180deg, transparent 0%, rgba(85, 255, 178, 0.03) 50%, rgba(85, 255, 178, 0.22) 98%, transparent 100%);
+      box-shadow: 0 0 8px rgba(85, 255, 178, 0.28);
+    }
+
+    /* Reticle corner brackets in mix mode */
+    .light-mode .corner-bracket {
+      border-color: #55ffb2;
+    }
+
+    /* Topline online status beacon in mix mode */
+    .light-mode .online {
+      color: #55ffb2;
+      text-shadow: 0 0 6px #55ffb299;
+    }
+
+    /* Center HUD neon bloom in mix mode */
+    .light-mode .hud {
+      filter: drop-shadow(0 0 10px #3ef5a555);
+    }
+
+    /* Rotating radar sweep gradient in mix mode */
+    .light-mode .radar-sweep {
+      background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(85, 255, 178, 0.04) 300deg, rgba(85, 255, 178, 0.3) 360deg);
+    }
+
+    /* Satellite orbit particle in mix mode */
+    .light-mode .orbit::after {
+      box-shadow: 0 0 6px #55ffb2, 0 0 12px #55ffb2;
+    }
+
+    /* Orbital rings r1, r2, r3 in mix mode */
+    .light-mode .r1 {
+      border-top-color: #55ffb2;
+      border-right-color: #278bff;
+      border-bottom-color: #1d7b6f;
+    }
+
+    .light-mode .r2 {
+      border-color: #38dec07a;
+    }
+
+    .light-mode .r3 {
+      border-left-color: #5effbc;
+      border-bottom-color: #257bc2;
+    }
+
+    /* Dial gauge ticks in mix mode */
+    .light-mode .ticks {
+      background: repeating-conic-gradient(from 0deg, #5effbd 0deg 1.2deg, transparent 1.2deg 15deg);
+    }
+
+    /* Clock digital glow in mix mode */
+    .light-mode .clock {
+      text-shadow: 0 0 14px #49fab677, 0 0 26px #278bff44;
+    }
+
+    .light-mode .time-label {
+      color: #5effbe;
+    }
+
+    .light-mode .date {
+      color: #9fead4;
+    }
+
+    /* Mini compass pill in mix mode */
+    .light-mode .compass {
+      background: rgba(7, 36, 33, 0.8);
+      border-color: rgba(104, 255, 181, 0.4);
+      box-shadow: 0 0 8px rgba(104, 255, 181, 0.2);
+    }
+
+    .light-mode .compass:hover {
+      border-color: #5effbe;
+      box-shadow: 0 0 10px rgba(104, 255, 181, 0.4);
+    }
+
+    .light-mode .compass-deg {
+      color: #5effbe;
+    }
+
+    .light-mode .compass-icon svg {
+      filter: drop-shadow(0 0 3px rgba(104, 255, 181, 0.5));
+    }
+
+    /* Full expanded compass screen in mix mode */
+    .light-mode .compass-screen {
+      background: radial-gradient(circle at 50% 36%, #093739 0%, #041c22 48%, #01080d 85%);
+      box-shadow: inset 0 0 24px #33ffaa24;
+    }
+
+    .light-mode .cs-back {
+      color: #5effbe;
+    }
+
+    .light-mode .cs-svg-dial {
+      filter: drop-shadow(0 0 8px rgba(94, 255, 190, 0.35));
+    }
+
+    .light-mode .cs-bearing-deg {
+      color: #f2fffc;
+      text-shadow: 0 0 12px #5effbe;
+    }
+
+    .light-mode .cs-bearing-card {
+      color: #5effbe;
+    }
+
+    .light-mode .cs-telemetry-grid {
+      background: rgba(4, 22, 23, 0.8);
+      border-color: rgba(94, 255, 190, 0.25);
+    }
+
+    .light-mode .cs-telem-val {
+      color: #ebfff8;
+    }
+
+    .light-mode .cs-footer {
+      color: #5effbe;
+    }
+
+    /* Telemetry statistics in mix mode */
+    .light-mode .value {
+      color: #f2fffc;
+    }
+
+    .light-mode .label {
+      color: #78a69d;
+    }
+
+    .light-mode .meter {
+      background: #0f272a;
+    }
+
+    .light-mode .meter span {
+      background: linear-gradient(90deg, #278bff 0%, #55ffb2 100%);
+      box-shadow: 0 0 8px #55ffb299;
+    }
+
+    .light-mode .bottom {
+      color: #55ffb2;
+      text-shadow: 0 0 8px #55ffb266;
+    }
+
+    /* Workbench control panel in mix mode */
+    .light-mode .panel {
+      background: #05161cdb;
+      border-color: #18524d;
+      box-shadow: 0 18px 55px #0007, 0 0 35px #27ffb20d;
+    }
+
+    .light-mode .kicker {
+      color: #55ffb2;
+    }
+
+    .light-mode label {
+      color: #d6f8ef;
+    }
+
+    .light-mode input[type=range] {
+      accent-color: #55ffb2;
+    }
+
+    .light-mode button {
+      border-color: #3fe0b2;
+      background: #082d2c;
+      color: #ddfbf2;
+    }
+
+    .light-mode button:hover {
+      background: #0f403e;
+      border-color: #5effbe;
+    }
+
+    /* Active state for mode buttons */
+    #lightModeToggle.active,
+    .light-mode #lightModeToggle,
+    #motionWakeToggle.active,
+    .light-mode #motionWakeToggle.active {
+      background: linear-gradient(135deg, #0e4b3e, #0c3342);
+      border-color: #5effbe;
+      box-shadow: 0 0 12px #5effbe55;
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       22. RED STRESS THEME (HIGH-PRESSURE MODE)
+       ==========================================================================
+       Swaps the cyber palette for a high-urgency crimson interface with a slow
+       stress pulse. Activated via the Stress Mode button; mutually exclusive
+       with the Blue-Green Mix theme.
+    */
+    .stress-mode {
+      --cyan: #ff3355;
+      --green: #ff7a6b;
+      --muted: #b9838d;
+    }
+
+    /* Workbench backdrop in stress mode */
+    .stress-mode body {
+      background: radial-gradient(ellipse at 50% 20%, #40101a 0%, #1d070d 42%, #070103 80%);
+      color: #fff0f2;
+    }
+
+    /* Metal chassis in stress mode */
+    .stress-mode .watch {
+      border-color: #4a2028;
+      background: linear-gradient(145deg, #2a1218, #0a0305 60%, #2e141a);
+      box-shadow: 0 22px 70px #000c, inset 0 0 0 2px #7d3a45;
+    }
+
+    .stress-mode .watch:after {
+      background: #8a4a55;
+    }
+
+    /* OLED back-glow with a slow emergency pulse */
+    .stress-mode .screen {
+      background: radial-gradient(circle at 50% 38%, #3a0c14 0%, #19060b 46%, #050103 80%);
+      border-color: #8e2233;
+      box-shadow: inset 0 0 24px #ff33551f;
+      animation: stressPulse 2.6s ease-in-out infinite;
+    }
+
+    .stress-mode .ui:after {
+      background: repeating-linear-gradient(0deg, transparent 0 4px, #ff33550a 5px 6px);
+    }
+
+    /* Laser scan beam in stress mode */
+    .stress-mode .scan-beam {
+      background: linear-gradient(180deg, transparent 0%, rgba(255, 51, 85, 0.04) 50%, rgba(255, 51, 85, 0.26) 98%, transparent 100%);
+      box-shadow: 0 0 10px rgba(255, 51, 85, 0.35);
+    }
+
+    .stress-mode .corner-bracket {
+      border-color: #ff556e;
+    }
+
+    .stress-mode .online {
+      color: #ff8a7d;
+      text-shadow: 0 0 6px #ff556e99;
+    }
+
+    .stress-mode .hud {
+      filter: drop-shadow(0 0 10px #ff335566);
+    }
+
+    .stress-mode .radar-sweep {
+      background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(255, 51, 85, 0.05) 300deg, rgba(255, 51, 85, 0.34) 360deg);
+    }
+
+    .stress-mode .orbit::after {
+      box-shadow: 0 0 6px #ff556e, 0 0 12px #ff3355;
+    }
+
+    .stress-mode .r1 {
+      border-top-color: #ff556e;
+      border-right-color: #a3162e;
+      border-bottom-color: #7d1023;
+    }
+
+    .stress-mode .r2 {
+      border-color: #ff556e7a;
+    }
+
+    .stress-mode .r3 {
+      border-left-color: #ff6b80;
+      border-bottom-color: #96172c;
+    }
+
+    .stress-mode .ticks {
+      background: repeating-conic-gradient(from 0deg, #ff556e 0deg 1deg, transparent 1deg 15deg);
+    }
+
+    .stress-mode .clock {
+      text-shadow: 0 0 15px #ff335588, 0 0 28px #ff335533;
+    }
+
+    .stress-mode .time-label {
+      color: #ff8a9c;
+    }
+
+    .stress-mode .date {
+      color: #f2b8c1;
+    }
+
+    .stress-mode .compass {
+      background: rgba(46, 10, 17, 0.8);
+      border-color: rgba(255, 85, 110, 0.45);
+      box-shadow: 0 0 8px rgba(255, 51, 85, 0.22);
+    }
+
+    .stress-mode .compass:hover {
+      border-color: #ff556e;
+      box-shadow: 0 0 10px rgba(255, 51, 85, 0.45);
+    }
+
+    .stress-mode .compass-deg {
+      color: #ff8a9c;
+    }
+
+    .stress-mode .compass-icon svg {
+      filter: drop-shadow(0 0 3px rgba(255, 51, 85, 0.6));
+    }
+
+    /* Recolor the mini dial's dark-teal backing plate */
+    .stress-mode .compass-icon svg circle[fill="#08222b"] {
+      fill: #2e0a11;
+    }
+
+    /* Motion badge glow follows the emergency palette */
+    .stress-mode .motion-badge {
+      box-shadow: 0 0 12px rgba(255, 51, 85, 0.5);
+    }
+
+    /* Keep the compass needles readable when both halves turn red */
+    .stress-mode #compassNeedleGroup polygon:nth-of-type(3),
+    .stress-mode #compassNeedleGroup polygon:nth-of-type(4),
+    .stress-mode #fullCompassRotatingGroup polygon:nth-of-type(3),
+    .stress-mode #fullCompassRotatingGroup polygon:nth-of-type(4) {
+      fill: #ffb3bf;
+    }
+
+    .stress-mode .compass-screen {
+      background: radial-gradient(circle at 50% 36%, #330b13 0%, #17050a 48%, #050103 85%);
+      box-shadow: inset 0 0 24px #ff33551f;
+    }
+
+    .stress-mode .cs-back {
+      color: #ff8a9c;
+    }
+
+    .stress-mode .cs-svg-dial {
+      filter: drop-shadow(0 0 8px rgba(255, 51, 85, 0.4));
+    }
+
+    .stress-mode .cs-bearing-deg {
+      color: #fff2f4;
+      text-shadow: 0 0 12px #ff3355;
+    }
+
+    .stress-mode .cs-bearing-card {
+      color: #ff8a9c;
+    }
+
+    .stress-mode .cs-telemetry-grid {
+      background: rgba(30, 7, 12, 0.8);
+      border-color: rgba(255, 85, 110, 0.28);
+    }
+
+    .stress-mode .cs-telem-val {
+      color: #fff0f3;
+    }
+
+    .stress-mode .cs-footer {
+      color: #ff8a9c;
+    }
+
+    .stress-mode .value {
+      color: #fff5f6;
+    }
+
+    .stress-mode .label {
+      color: #b9838d;
+    }
+
+    .stress-mode .meter {
+      background: #361016;
+    }
+
+    .stress-mode .meter span {
+      background: linear-gradient(90deg, #8f1026 0%, #ff556e 100%);
+      box-shadow: 0 0 8px #ff335599;
+    }
+
+    .stress-mode .bottom {
+      color: #ff6b80;
+      text-shadow: 0 0 8px #ff335566;
+    }
+
+    .stress-mode .panel {
+      background: #15060adb;
+      border-color: #5c1a26;
+      box-shadow: 0 18px 55px #0007, 0 0 35px #ff33550d;
+    }
+
+    .stress-mode .kicker {
+      color: #ff6b80;
+    }
+
+    .stress-mode label {
+      color: #ffdde1;
+    }
+
+    .stress-mode input[type=range] {
+      accent-color: #ff556e;
+    }
+
+    .stress-mode button {
+      border-color: #e03a52;
+      background: #2b0b12;
+      color: #ffe9ec;
+    }
+
+    .stress-mode button:hover {
+      background: #45101a;
+      border-color: #ff6b80;
+    }
+
+    /* Active state for the Stress Mode button */
+    #stressModeToggle.active,
+    .stress-mode #stressModeToggle {
+      background: linear-gradient(135deg, #5a0e1b, #360912);
+      border-color: #ff6b80;
+      box-shadow: 0 0 12px #ff335566;
+      color: #ffffff;
+    }
+
+    /* Motion Wake stays active, but in crimson instead of green */
+    .stress-mode #motionWakeToggle.active {
+      background: linear-gradient(135deg, #4a1220, #2a0a12);
+      border-color: #ff6b80;
+      box-shadow: 0 0 12px #ff335555;
+      color: #ffffff;
+    }
+
+    /* Fullscreen backdrop in stress mode */
+    .stress-mode .watch:fullscreen::backdrop {
+      background: radial-gradient(ellipse at 50% 40%, #3a0e17 0%, #12040a 55%, #030102 100%);
+    }
+
+    /* Slow stress breathing glow on the OLED panel */
+    @keyframes stressPulse {
+      0%,
+      100% {
+        box-shadow: inset 0 0 24px #ff33551f;
+      }
+
+      50% {
+        box-shadow: inset 0 0 34px #ff335547, 0 0 18px #ff335526;
+      }
+    }
+
+    /* ==========================================================================
+       23. RESPONSIVE BREAKPOINT FOR MOBILE & SMALL SCREENS (<= 650px)
+       ==========================================================================
+       Stacks layout into a single column, placing preview on top and panel below.
+    */
+    @media(max-width:650px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 22px;
+      }
+
+      .panel {
+        order: -1;
+      }
+
+      .watch {
+        transform: scale(.94);
+        margin: -8px 0;
+      }
+
+      .screen {
+        max-width: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ========================================================================
+       WORKBENCH MAIN LAYOUT CONTAINER
+       ======================================================================== -->
+  <main class="layout">
+
+    <!-- ======================================================================
+         STAGE: SMARTWATCH HARDWARE PREVIEW
+         ====================================================================== -->
+    <section class="stage" aria-label="240 by 296 pixel watch face preview">
+      <!-- Physical watch hardware casing simulation -->
+      <div class="watch">
+        <!-- 240x296 Curved-rectangle OLED screen display area -->
+        <div class="screen">
+          <!-- Holographic laser scan sweep line -->
+          <div class="scan-beam"></div>
+
+          <!-- Body motion detected HUD badge -->
+          <div class="motion-badge" id="motionBadge">⚡ BODY MOTION WAKE</div>
+
+          <!-- Tactical HUD Reticle Corner Brackets -->
+          <div class="corner-bracket tl"></div>
+          <div class="corner-bracket tr"></div>
+          <div class="corner-bracket bl"></div>
+          <div class="corner-bracket br"></div>
+
+          <!-- ================================================================
+               MAIN WATCHFACE UI
+               ================================================================ -->
+          <div class="ui" id="mainUi">
+            <!-- Top Status Line: Brand mark and live online beacon -->
+            <div class="topline">
+              <span>smartJO</span>
+              <span class="online"><span class="pulse-dot">●</span> ONLINE</span>
+            </div>
+
+            <!-- Central Sci-Fi HUD Radar & Time Assembly -->
+            <div class="hud" id="hud">
+              <!-- Radial dial tick marks -->
+              <div class="ticks"></div>
+
+              <!-- Rotating conic radar beam sweep -->
+              <div class="radar-sweep"></div>
+
+              <!-- Concentric cybernetic orbital rings -->
+              <div class="ring r1"></div>
+              <div class="ring r2"></div>
+              <div class="ring r3"></div>
+
+              <!-- Orbiting telemetry particle blip -->
+              <div class="orbit"></div>
+
+              <!-- Central Digital Clock Display -->
+              <div class="clock">
+                <div class="time" id="time">10:08</div>
+                <div class="time-label" id="timeLabel">LOCAL TIME</div>
+              </div>
+            </div>
+
+            <!-- Mid-Bar: Date Display and Interactive Mini Compass Pill -->
+            <div class="mid-bar">
+              <div class="date" id="date">MON · 26 OCT</div>
+
+              <!-- Clickable Mini Compass (Tap to expand full navigation compass) -->
+              <div class="compass" id="compass" role="button" tabindex="0" aria-haspopup="dialog"
+                aria-label="042° NE — open full compass view" title="Touch to open Full Compass view">
+                <span class="compass-icon">
+                  <svg viewBox="0 0 18 18" width="13" height="13">
+                    <!-- Compass dial background rim -->
+                    <circle cx="9" cy="9" r="8" fill="#08222b" stroke="var(--cyan)" stroke-width="1" opacity="0.85" />
+                    <!-- Dynamic rotating magnetic compass needle -->
+                    <g id="compassNeedleGroup" class="compass-needle-group" transform="rotate(42 9 9)">
+                      <!-- North red needle pointer -->
+                      <polygon points="9,2 11.2,9 9,7.5" fill="#ff3b5c" />
+                      <polygon points="9,2 6.8,9 9,7.5" fill="#ff6b84" />
+                      <!-- South cyan needle pointer -->
+                      <polygon points="9,16 11.2,9 9,7.5" fill="var(--cyan)" opacity="0.85" />
+                      <polygon points="9,16 6.8,9 9,7.5" fill="var(--cyan)" opacity="0.5" />
+                      <!-- Center pivot pin -->
+                      <circle cx="9" cy="9" r="1.3" fill="#ffffff" />
+                    </g>
+                  </svg>
+                </span>
+                <span class="compass-deg" id="compassDeg">042° NE</span>
+              </div>
+            </div>
+
+            <!-- Biometric & Telemetry Gauge Bars -->
+            <div class="stats">
+              <!-- Power / Battery Status Column -->
+              <div class="stat">
+                <div class="value" id="battery">86%</div>
+                <div class="label">POWER</div>
+                <div class="meter"><span id="batteryBar" style="width:86%"></span></div>
+              </div>
+
+              <!-- Step Count Telemetry Column -->
+              <div class="stat">
+                <div class="value" id="steps">6.2k</div>
+                <div class="label">STEPS*</div>
+                <div class="meter"><span id="stepsBar" style="width:62%"></span></div>
+              </div>
+
+              <!-- Heart Rate (BPM) Biometrics Column -->
+              <div class="stat">
+                <div class="value" id="bpm"><span id="bpmNum">74</span><span class="bpm-icon">♥</span></div>
+                <div class="label">BPM*</div>
+                <div class="meter"><span id="bpmBar" style="width:68%"></span></div>
+              </div>
+            </div>
+
+            <!-- Dynamic Sci-Fi Status Message Ticker -->
+            <div class="bottom" id="statusMessage" aria-live="polite">SYSTEMS NOMINAL</div>
+          </div>
+
+          <!-- ================================================================
+               FULL EXPANDED NAVIGATION COMPASS SCREEN (MODAL VIEW)
+               Tap anywhere on this screen to return to standard watchface view.
+               ================================================================ -->
+          <div class="compass-screen" id="compassScreen" role="dialog" aria-modal="true"
+            aria-label="Full compass navigation" aria-hidden="true" tabindex="-1"
+            title="Tap anywhere on screen to return">
+            <!-- Modal Header -->
+            <div class="cs-header">
+              <span class="cs-back">‹ EXIT</span>
+              <span>NAV // COMPASS</span>
+              <span class="cs-gps">GPS ●</span>
+            </div>
+
+            <!-- Rotating Compass Rose Dial Container -->
+            <div class="cs-dial-wrap">
+              <!-- Fixed top 12 o'clock heading marker triangle -->
+              <div class="cs-heading-marker"></div>
+
+              <svg viewBox="0 0 134 134" class="cs-svg-dial">
+                <!-- Outer static degree ring -->
+                <circle cx="67" cy="67" r="63" fill="none" stroke="var(--cyan)" stroke-width="1" opacity="0.3" />
+                <circle cx="67" cy="67" r="58" fill="none" stroke="var(--cyan)" stroke-width="0.75"
+                  stroke-dasharray="1.5 6.5" opacity="0.5" />
+
+                <!-- Rotating dial assembly (counter-rotates to match current azimuth) -->
+                <g id="fullCompassRotatingGroup" class="cs-rotating-group" transform="rotate(-42 67 67)">
+                  <!-- Cardinal and intercardinal tick marks -->
+                  <g stroke="var(--cyan)" opacity="0.7" stroke-width="1">
+                    <line x1="67" y1="4" x2="67" y2="10" stroke="#ff3355" stroke-width="1.8" />
+                    <line x1="130" y1="67" x2="124" y2="67" />
+                    <line x1="67" y1="130" x2="67" y2="124" />
+                    <line x1="4" y1="67" x2="10" y2="67" />
+                    <line x1="111.5" y1="22.5" x2="107.5" y2="26.5" opacity="0.4" />
+                    <line x1="111.5" y1="111.5" x2="107.5" y2="107.5" opacity="0.4" />
+                    <line x1="22.5" y1="111.5" x2="26.5" y2="107.5" opacity="0.4" />
+                    <line x1="22.5" y1="22.5" x2="26.5" y2="26.5" opacity="0.4" />
+                  </g>
+
+                  <!-- Primary Cardinal Typography (N, E, S, W) -->
+                  <text x="67" y="21" fill="#ff3355" font-size="10.5" font-weight="800" text-anchor="middle"
+                    dominant-baseline="middle" font-family="sans-serif">N</text>
+                  <text x="115" y="67.5" fill="var(--cyan)" font-size="9" font-weight="700" text-anchor="middle"
+                    dominant-baseline="middle" font-family="sans-serif">E</text>
+                  <text x="67" y="115" fill="var(--cyan)" font-size="9" font-weight="700" text-anchor="middle"
+                    dominant-baseline="middle" font-family="sans-serif">S</text>
+                  <text x="19" y="67.5" fill="var(--cyan)" font-size="9" font-weight="700" text-anchor="middle"
+                    dominant-baseline="middle" font-family="sans-serif">W</text>
+
+                  <!-- Intercardinal Typography (NE, SE, SW, NW) -->
+                  <text x="98" y="36" fill="var(--muted)" font-size="6.5" font-weight="600" text-anchor="middle"
+                    dominant-baseline="middle" opacity="0.8">NE</text>
+                  <text x="98" y="98" fill="var(--muted)" font-size="6.5" font-weight="600" text-anchor="middle"
+                    dominant-baseline="middle" opacity="0.8">SE</text>
+                  <text x="36" y="98" fill="var(--muted)" font-size="6.5" font-weight="600" text-anchor="middle"
+                    dominant-baseline="middle" opacity="0.8">SW</text>
+                  <text x="36" y="36" fill="var(--muted)" font-size="6.5" font-weight="600" text-anchor="middle"
+                    dominant-baseline="middle" opacity="0.8">NW</text>
+
+                  <!-- 3D Navigation Arrow Needle -->
+                  <polygon points="67,27 72,67 67,61" fill="#ff3355" />
+                  <polygon points="67,27 62,67 67,61" fill="#ff6680" />
+                  <polygon points="67,107 72,67 67,73" fill="var(--cyan)" opacity="0.85" />
+                  <polygon points="67,107 62,67 67,73" fill="var(--cyan)" opacity="0.5" />
+                </g>
+
+                <!-- Center Crosshair Reticle & Live Spirit Level Bubble -->
+                <circle cx="67" cy="67" r="14" fill="none" stroke="var(--cyan)" stroke-width="0.8" opacity="0.35" />
+                <line x1="67" y1="58" x2="67" y2="76" stroke="var(--cyan)" stroke-width="0.8" opacity="0.4" />
+                <line x1="58" y1="67" x2="76" y2="67" stroke="var(--cyan)" stroke-width="0.8" opacity="0.4" />
+                <!-- Inclinometer Spirit Level Bubble (moves dynamically with device/cursor tilt) -->
+                <circle id="csLevelBubble" cx="67" cy="67" r="3.5" fill="var(--cyan)" opacity="0.65"
+                  filter="drop-shadow(0 0 3px var(--cyan))" />
+                <circle cx="67" cy="67" r="2" fill="#ffffff" />
+              </svg>
+            </div>
+
+            <!-- Digital Bearing Readout -->
+            <div class="cs-bearing-block">
+              <div class="cs-bearing-deg" id="fullCompassDeg">042°</div>
+              <div class="cs-bearing-card" id="fullCompassCard">NORTH-EAST · BEARING</div>
+            </div>
+
+            <!-- 2x2 Tactical Telemetry HUD Grid -->
+            <div class="cs-telemetry-grid">
+              <div class="cs-telem-item">
+                <span class="cs-telem-val" id="csAlt">148 m</span>
+                <span class="cs-telem-lbl">ELEVATION</span>
+              </div>
+              <div class="cs-telem-item">
+                <span class="cs-telem-val" id="csTilt">+1.8°</span>
+                <span class="cs-telem-lbl">INCLINE</span>
+              </div>
+              <div class="cs-telem-item">
+                <span class="cs-telem-val" id="csCoords">12°58'N 77°35'E</span>
+                <span class="cs-telem-lbl">GPS FIX</span>
+              </div>
+              <div class="cs-telem-item">
+                <span class="cs-telem-val" id="csBaro">1013.4 hPa</span>
+                <span class="cs-telem-lbl">BAROMETRIC</span>
+              </div>
+            </div>
+
+            <!-- Dismiss Hint Footer -->
+            <div class="cs-footer">
+              <span>●</span> TAP SCREEN TO RETURN <span>●</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview dimensions label -->
+      <div class="caption">Target canvas: 240 × 296 px · Curved-rectangle preview</div>
+    </section>
+
+    <!-- ======================================================================
+         CONTROL PANEL: WORKBENCH TEST SLIDERS & ACTION BUTTONS
+         ====================================================================== -->
+    <section class="panel">
+      <div class="kicker">CUSTOM WATCHFACE / CONCEPT 001</div>
+      <h1>smart<span style="color:var(--cyan)">JO</span></h1>
+      <p>Designed around a 240 × 296 pixel canvas with a high-tech sci-fi HUD. Features active radar sweep, orbital
+        telemetry blip, holographic scan beam, breathing biometrics, 3D wrist tilt, body-movement wake, full expanded
+        compass navigation screen, and Cyan / Blue-Green / Red Stress themes.</p>
+
+      <!-- Interactive Range Sliders -->
+      <div class="controls">
+        <div>
+          <label for="glow">HUD glow <span id="glowVal">65%</span></label>
+          <input id="glow" type="range" min="10" max="100" value="65">
+        </div>
+        <div>
+          <label for="speed">Ring speed <span id="speedVal">18s</span></label>
+          <input id="speed" type="range" min="6" max="40" value="18">
+        </div>
+        <div>
+          <label for="brightness">Accent intensity <span id="brightVal">55%</span></label>
+          <input id="brightness" type="range" min="20" max="100" value="55">
+        </div>
+      </div>
+
+      <!-- Interactive Action Buttons -->
+      <div class="actions">
+        <button id="toggle">Pause animation</button>
+        <button id="fullscreen">Full-screen preview</button>
+        <button id="lightModeToggle">Blue-Green Mix Mode</button>
+        <button id="stressModeToggle">🧠 Stress Mode</button>
+        <button id="compassScreenBtn">🧭 Full Compass</button>
+        <button id="motionSimBtn">⚡ Simulate Body Move</button>
+        <button id="motionWakeToggle" class="active">Motion Wake: ON</button>
+      </div>
+
+      <!-- Explanatory sensor notes for users -->
+      <p class="note">*Sensor capabilities: If your laptop has built-in motion sensors, physical laptop movement
+        triggers the motion wake and increments steps! Real laptop battery level is also read via Battery API. Heart
+        rate (BPM) is simulated as laptops lack optical pulse sensors.</p>
+      <p class="note">This prototype runs inside your browser to test the 240 × 296 UI layout. It cannot read the
+        physical sensors on a watch strapped to your wrist without an active Bluetooth companion bridge.</p>
+    </section>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    function updateClock() {
+      const d = new Date();
+      $('time').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      $('date').textContent = d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase().replace(',', ' ·');
+    }
+    updateClock(); setInterval(updateClock, 1000);
+
+    const mixBtn = $('lightModeToggle');
+    const stressBtn = $('stressModeToggle');
+    function applyHUDColors() {
+      const root = document.documentElement;
+      const isStress = root.classList.contains('stress-mode');
+      const isMix = !isStress && root.classList.contains('light-mode');
+      const v = +$('glow').value;
+      const glowColor = isStress ? '#ff3355' : isMix ? '#3ef5a5' : '#26eaff';
+      $('hud').style.filter = `drop-shadow(0 0 ${v / 5}px ${glowColor}${Math.round(v * 2.55).toString(16).padStart(2, '0')})`;
+      const b = +$('brightness').value;
+      // Each theme uses one HSL formula so the slider range is fully usable and
+      // toggling themes round-trips to that theme's default at 55%.
+      const hue = isStress ? 350 : isMix ? 158 : 184;
+      const sat = isMix ? 90 : 100;
+      const baseLight = isStress ? 60 : isMix ? 62 : 67;
+      const lightness = Math.max(35, Math.min(85, baseLight + (b - 55) * 0.35));
+      root.style.setProperty('--cyan', `hsl(${hue} ${sat}% ${lightness.toFixed(1)}%)`);
+    }
+
+    function resetMixButton() {
+      mixBtn.textContent = 'Blue-Green Mix Mode';
+      mixBtn.classList.remove('active');
+    }
+
+    function resetStressButton() {
+      if (!stressBtn) return;
+      stressBtn.textContent = '🧠 Stress Mode';
+      stressBtn.classList.remove('active');
+    }
+
+    $('glow').addEventListener('input', e => {
+      const v = +e.target.value;
+      $('glowVal').textContent = v + '%';
+      applyHUDColors();
+    });
+
+    function applyRingSpeed(v) {
+      $('speedVal').textContent = v + 's';
+      document.querySelector('.r1').style.animationDuration = v + 's';
+      document.querySelector('.r2').style.animationDuration = (v * 1.8) + 's';
+      document.querySelector('.r3').style.animationDuration = (v * 0.8) + 's';
+      const radar = document.querySelector('.radar-sweep');
+      if (radar) radar.style.animationDuration = Math.max(1.5, v * 0.28) + 's';
+      const orb = document.querySelector('.orbit');
+      if (orb) orb.style.animationDuration = (v * 0.55) + 's';
+    }
+
+    $('speed').addEventListener('input', e => applyRingSpeed(+e.target.value));
+
+    $('brightness').addEventListener('input', e => {
+      const v = +e.target.value;
+      $('brightVal').textContent = v + '%';
+      applyHUDColors();
+    });
+
+    let paused = false;
+    $('toggle').addEventListener('click', () => {
+      paused = !paused;
+      // Pause the whole stage so the chassis wrist animation is included too
+      document.querySelector('.stage').classList.toggle('animations-paused', paused);
+      $('toggle').textContent = paused ? 'Resume animation' : 'Pause animation';
+    });
+
+    // Fullscreen preview: isolates the watch chassis instead of the whole workbench
+    $('fullscreen').addEventListener('click', async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.querySelector('.watch').requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch {
+        alert('Fullscreen is not available in this browser.');
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      $('fullscreen').textContent = document.fullscreenElement ? 'Exit full-screen' : 'Full-screen preview';
+    });
+
+    // Blue-Green mix mode & Body Movement Wake Logic
+    const motionBadge = $('motionBadge');
+    const motionWakeToggle = $('motionWakeToggle');
+    const motionSimBtn = $('motionSimBtn');
+    let motionWakeEnabled = true;
+    let motionBadgeTimer = null;
+    let wristMotionTimer = null;
+
+    function setMixMode(active, fromMotion = false) {
+      const root = document.documentElement;
+      if (active) {
+        // Themes are mutually exclusive; entering Mix Mode leaves Stress Mode
+        root.classList.remove('stress-mode');
+        resetStressButton();
+        root.classList.add('light-mode');
+        mixBtn.textContent = '✓ Blue-Green Mix Active';
+        mixBtn.classList.add('active');
+      } else {
+        root.classList.remove('light-mode');
+        resetMixButton();
+      }
+      applyHUDColors();
+
+      if (fromMotion) {
+        const watch = document.querySelector('.watch');
+        if (watch) {
+          watch.classList.remove('wrist-motion');
+          void watch.offsetWidth;
+          watch.classList.add('wrist-motion');
+          // Release the class once the raise animation ends, otherwise the
+          // hover-tilt handler stays disabled forever
+          clearTimeout(wristMotionTimer);
+          wristMotionTimer = setTimeout(() => watch.classList.remove('wrist-motion'), 900);
+        }
+        if (motionBadge) {
+          motionBadge.classList.add('visible');
+          clearTimeout(motionBadgeTimer);
+          motionBadgeTimer = setTimeout(() => {
+            motionBadge.classList.remove('visible');
+          }, 2400);
+        }
+        const statusEl = $('statusMessage');
+        if (statusEl) {
+          const prev = statusEl.textContent;
+          statusEl.textContent = 'BODY MOTION DETECTED';
+          setTimeout(() => { statusEl.textContent = prev; }, 2400);
+        }
+      }
+    }
+
+    // Red Stress theme: mutually exclusive with Mix Mode
+    function setStressMode(active) {
+      const root = document.documentElement;
+      if (active) {
+        root.classList.remove('light-mode');
+        resetMixButton();
+        root.classList.add('stress-mode');
+        if (stressBtn) {
+          stressBtn.textContent = '✓ Stress Mode Active';
+          stressBtn.classList.add('active');
+        }
+      } else {
+        root.classList.remove('stress-mode');
+        resetStressButton();
+      }
+      applyHUDColors();
+
+      // Swap the ticker vocabulary so normal status copy does not appear
+      // while the stress theme is running.
+      const statusEl = $('statusMessage');
+      if (statusEl) {
+        statusIdx = 0;
+        statusEl.textContent = active ? stressMessages[0] : statusMessages[0];
+        statusEl.style.opacity = '1';
+      }
+    }
+
+    mixBtn.addEventListener('click', () => {
+      const isCurrentlyMix = document.documentElement.classList.contains('light-mode');
+      setMixMode(!isCurrentlyMix, false);
+    });
+
+    if (stressBtn) {
+      stressBtn.addEventListener('click', () => {
+        const isCurrentlyStress = document.documentElement.classList.contains('stress-mode');
+        setStressMode(!isCurrentlyStress);
+      });
+    }
+
+    if (motionSimBtn) {
+      motionSimBtn.addEventListener('click', () => {
+        setMixMode(true, true);
+      });
+    }
+
+    if (motionWakeToggle) {
+      motionWakeToggle.addEventListener('click', () => {
+        motionWakeEnabled = !motionWakeEnabled;
+        motionWakeToggle.textContent = motionWakeEnabled ? 'Motion Wake: ON' : 'Motion Wake: OFF';
+        motionWakeToggle.classList.toggle('active', motionWakeEnabled);
+      });
+    }
+
+    // 1. Hardware Accelerometer & Gyroscope (devicemotion on laptop/tablet)
+    //    Mouse velocity is intentionally NOT a wake source: it made the theme
+    //    flip by accident whenever the cursor moved quickly across the page.
+    let lastStepTime = 0;
+    window.addEventListener('devicemotion', e => {
+      if (!motionWakeEnabled) return;
+      const acc = e.accelerationIncludingGravity || e.acceleration;
+      if (!acc) return;
+      const totalAcc = Math.hypot(acc.x || 0, acc.y || 0, (acc.z || 9.8) - 9.8);
+
+      // Motion wake trigger on laptop movement (never overrides Red Stress)
+      if (totalAcc > 3.8) {
+        const root = document.documentElement;
+        if (!root.classList.contains('light-mode') && !root.classList.contains('stress-mode')) {
+          setMixMode(true, true);
+        }
+      }
+
+      // Physical step detection when walking/moving with laptop
+      const now = Date.now();
+      if (totalAcc > 2.8 && (now - lastStepTime > 420)) {
+        lastStepTime = now;
+        stepsCount++;
+        updateStepsUI();
+      }
+    });
+
+    // Real Laptop Battery Status API
+    if ('getBattery' in navigator) {
+      navigator.getBattery().then(battery => {
+        function updateBattery() {
+          const level = Math.round(battery.level * 100);
+          const isCharging = battery.charging;
+          const batEl = $('battery');
+          const batBar = $('batteryBar');
+          if (batEl) batEl.textContent = level + '%' + (isCharging ? '⚡' : '');
+          if (batBar) batBar.style.width = level + '%';
+        }
+        updateBattery();
+        battery.addEventListener('levelchange', updateBattery);
+        battery.addEventListener('chargingchange', updateBattery);
+      }).catch(() => { });
+    }
+
+    // 3. Interactive 3D wrist tilt on hover over watch
+    const watchEl = document.querySelector('.watch');
+    if (watchEl) {
+      watchEl.addEventListener('mousemove', e => {
+        if (watchEl.classList.contains('wrist-motion')) return;
+        const rect = watchEl.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        const rotX = -(y / rect.height) * 16;
+        const rotY = (x / rect.width) * 16;
+        watchEl.style.transform = `perspective(700px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+      });
+      watchEl.addEventListener('mouseleave', () => {
+        if (!watchEl.classList.contains('wrist-motion')) {
+          watchEl.style.transform = '';
+        }
+      });
+    }
+
+    // Live Sci-Fi telemetry status messages
+    const statusMessages = [
+      'SYSTEMS NOMINAL',
+      'SYNC // 100%',
+      'QUANTUM LINK ACTIVE',
+      'TELEMETRY SECURE',
+      'CORE // 99.8%'
+    ];
+    // Separate vocabulary while the red stress theme is active
+    const stressMessages = [
+      '⚠ STRESS // RED PROTOCOL',
+      'CORTISOL: ELEVATED',
+      'BIO-SIGNAL MONITORING',
+      'RECOVERY PROTOCOL READY',
+      'CORE // 99.8%'
+    ];
+    let statusIdx = 0;
+    setInterval(() => {
+      if (paused) return;
+      const list = document.documentElement.classList.contains('stress-mode') ? stressMessages : statusMessages;
+      statusIdx = (statusIdx + 1) % list.length;
+      const el = $('statusMessage');
+      if (el) {
+        el.style.opacity = '0';
+        setTimeout(() => {
+          el.textContent = list[statusIdx];
+          el.style.opacity = '1';
+        }, 250);
+      }
+    }, 3800);
+
+    // Live heart rate micro-fluctuations & steps
+    let baseBpm = 74;
+    let stepsCount = 6214;
+
+    function updateStepsUI() {
+      const stepsEl = $('steps');
+      if (stepsEl) stepsEl.textContent = (stepsCount / 1000).toFixed(1) + 'k';
+      const stepsBar = $('stepsBar');
+      if (stepsBar) stepsBar.style.width = Math.min(100, Math.round((stepsCount / 10000) * 100)) + '%';
+    }
+
+    setInterval(() => {
+      if (paused) return;
+      const bpmVar = baseBpm + Math.floor(Math.random() * 7) - 3;
+      const bpmNum = $('bpmNum');
+      if (bpmNum) bpmNum.textContent = bpmVar;
+      const bpmBar = $('bpmBar');
+      if (bpmBar) bpmBar.style.width = Math.round((bpmVar / 100) * 82) + '%';
+
+      stepsCount += Math.floor(Math.random() * 3);
+      updateStepsUI();
+    }, 2200);
+
+    // Interactive Sci-Fi Mini & Full Expanded Compass Logic
+    let compassHeading = 42;
+    const compassNeedle = $('compassNeedleGroup');
+    const compassDegEl = $('compassDeg');
+    const compassEl = $('compass');
+
+    // Full Compass Screen Elements
+    const mainUi = $('mainUi');
+    const compassScreen = $('compassScreen');
+    const fullCompassRotatingGroup = $('fullCompassRotatingGroup');
+    const fullCompassDeg = $('fullCompassDeg');
+    const fullCompassCard = $('fullCompassCard');
+    const csLevelBubble = $('csLevelBubble');
+    const csTilt = $('csTilt');
+    const csAlt = $('csAlt');
+    const compassScreenBtn = $('compassScreenBtn');
+
+    let isCompassScreenOpen = false;
+
+    function openCompassScreen() {
+      isCompassScreenOpen = true;
+      if (compassScreen) {
+        compassScreen.classList.add('active');
+        compassScreen.setAttribute('aria-hidden', 'false');
+        compassScreen.focus({ preventScroll: true });
+      }
+      if (mainUi) mainUi.classList.add('blur-out');
+      if (compassScreenBtn) compassScreenBtn.textContent = '◀ Watchface View';
+      setCompass(compassHeading);
+    }
+
+    function closeCompassScreen() {
+      isCompassScreenOpen = false;
+      if (compassScreen) {
+        compassScreen.classList.remove('active');
+        compassScreen.setAttribute('aria-hidden', 'true');
+      }
+      if (mainUi) mainUi.classList.remove('blur-out');
+      if (compassScreenBtn) compassScreenBtn.textContent = '🧭 Full Compass';
+      if (compassEl) compassEl.focus({ preventScroll: true });
+    }
+
+    function toggleCompassScreen() {
+      if (isCompassScreenOpen) {
+        closeCompassScreen();
+      } else {
+        openCompassScreen();
+      }
+    }
+
+    // Touch mini compass to open full expanded screen
+    if (compassEl) {
+      compassEl.addEventListener('click', e => {
+        e.stopPropagation();
+        openCompassScreen();
+      });
+      compassEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openCompassScreen();
+        }
+      });
+    }
+
+    // Escape closes the compass overlay (keyboard equivalent of tapping it)
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && isCompassScreenOpen) {
+        e.preventDefault();
+        closeCompassScreen();
+      }
+    });
+
+    // Touch anywhere on the full compass screen to go back
+    if (compassScreen) {
+      compassScreen.addEventListener('click', () => {
+        closeCompassScreen();
+      });
+    }
+
+    // Action button in control panel
+    if (compassScreenBtn) {
+      compassScreenBtn.addEventListener('click', () => {
+        toggleCompassScreen();
+      });
+    }
+
+    const cardinalFullNames = {
+      'N': 'NORTH',
+      'NE': 'NORTH-EAST',
+      'E': 'EAST',
+      'SE': 'SOUTH-EAST',
+      'S': 'SOUTH',
+      'SW': 'SOUTH-WEST',
+      'W': 'WEST',
+      'NW': 'NORTH-WEST'
+    };
+
+    function getCardinal(deg) {
+      const cardinals = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      return cardinals[Math.round(deg / 45) % 8];
+    }
+
+    function setCompass(deg) {
+      compassHeading = ((deg % 360) + 360) % 360;
+
+      // Update mini compass
+      if (compassNeedle) {
+        // Use the CSS transform property so the transition actually animates
+        compassNeedle.style.transform = `rotate(${compassHeading.toFixed(1)}deg)`;
+      }
+      const rounded = Math.round(compassHeading);
+      const card = getCardinal(rounded);
+      if (compassDegEl) {
+        compassDegEl.textContent = `${rounded.toString().padStart(3, '0')}° ${card}`;
+      }
+      // Keep the button's accessible name in sync with its visible bearing text
+      if (compassEl && compassDegEl) {
+        compassEl.setAttribute('aria-label', `${compassDegEl.textContent} — open full compass view`);
+      }
+
+      // Update full expanded compass screen
+      if (fullCompassRotatingGroup) {
+        fullCompassRotatingGroup.style.transform = `rotate(${-compassHeading.toFixed(1)}deg)`;
+      }
+      if (fullCompassDeg) {
+        fullCompassDeg.textContent = `${rounded.toString().padStart(3, '0')}°`;
+      }
+      if (fullCompassCard) {
+        const fullName = cardinalFullNames[card] || card;
+        fullCompassCard.textContent = `${fullName} · BEARING`;
+      }
+    }
+
+    function updateTilt(tiltX, tiltY) {
+      if (csTilt) {
+        const totalTilt = Math.hypot(tiltX, tiltY);
+        // hypot is always positive, so derive the sign from pitch (tiltY)
+        const sign = tiltY < -0.05 ? '-' : '+';
+        csTilt.textContent = `${sign}${totalTilt.toFixed(1)}°`;
+      }
+      if (csLevelBubble) {
+        const bubbleX = 67 + Math.max(-8, Math.min(8, tiltX * 1.6));
+        const bubbleY = 67 + Math.max(-8, Math.min(8, tiltY * 1.6));
+        csLevelBubble.setAttribute('cx', bubbleX.toFixed(1));
+        csLevelBubble.setAttribute('cy', bubbleY.toFixed(1));
+      }
+    }
+
+    // 1. Device Orientation / Compass sensor hardware
+    window.addEventListener('deviceorientation', e => {
+      if (e.webkitCompassHeading !== undefined) {
+        setCompass(e.webkitCompassHeading);
+      } else if (e.alpha !== null) {
+        setCompass(360 - e.alpha);
+      }
+      if (e.beta !== null && e.gamma !== null) {
+        updateTilt((e.gamma || 0) * 0.18, (e.beta || 0) * 0.18);
+      }
+    });
+
+    // 2. Mouse tracking: orient compass and tilt smoothly when cursor moves over watch
+    if (watchEl) {
+      watchEl.addEventListener('mousemove', e => {
+        const rect = watchEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI) + 90;
+        setCompass(angle);
+        const normX = (e.clientX - cx) / (rect.width / 2);
+        const normY = (e.clientY - cy) / (rect.height / 2);
+        updateTilt(normX * 3.5, normY * 3.5);
+      });
+    }
+
+    // 3. Subtle ambient heading drift when idle
+    let compassDriftTime = 0;
+    setInterval(() => {
+      if (paused) return;
+      compassDriftTime += 0.08;
+      const drift = Math.sin(compassDriftTime) * 1.5;
+      setCompass(compassHeading + drift * 0.1);
+
+      // Subtle altitude reading micro-fluctuation (146 - 150 m)
+      if (csAlt) {
+        const alt = 148 + Math.round(Math.sin(compassDriftTime * 0.5) * 2);
+        csAlt.textContent = alt + ' m';
+      }
+    }, 120);
+
+    // Sync generated animation durations with the slider's displayed default
+    applyRingSpeed(+$('speed').value);
+
+    // Initial heading set
+    setCompass(42);
+  </script>
+</body>
+
+</html>
